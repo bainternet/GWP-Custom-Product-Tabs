@@ -3,7 +3,7 @@
 Plugin Name: GWP Custom Product Tabs
 Plugin URI:
 Description: A plugin to add Custom product tabs for WooCommerce
-Version: 1.0
+Version: 1.1
 Author: Ohad Raz
 Author URI: http://generatewp.com
 */
@@ -359,12 +359,16 @@ class GWP_Custom_Product_Tabs{
             $_ids = array_reverse($_ids);
             //loop over tabs and add them
             foreach ($_ids as $id) {
-                $tabs['customtab_'.$id] = array(
-                    'title'    => get_the_title($id),
-                    'priority' => 50,
-                    'callback' => array($this,'render_tab'),
-                    'content'  => apply_filters('the_content',get_post_field( 'post_content', $id)) //this allows shortcodes in custom tabs
-                );
+            	if ($this->post_exists($id)){
+					$display_title = get_post_meta($id,'tab_display_title',true);
+					$priority      = get_post_meta($id,'tab_priority',true);
+	                $tabs['customtab_'.$id] = array(
+	                    'title'    => ( !empty($display_title)? $display_title : get_the_title($id) ),
+	                    'priority' => ( !empty($priority)? $priority : 50 ),
+	                    'callback' => array($this,'render_tab'),
+	                    'content'  => apply_filters('the_content',get_post_field( 'post_content', $id)) //this allows shortcodes in custom tabs
+	                );
+            	}
             }
         }
         return $tabs;
@@ -408,7 +412,7 @@ class GWP_Custom_Product_Tabs{
             'label'               => __( 'Product Tabs', 'GWP' ),
             'description'         => __( 'Custom Product Tabs', 'GWP' ),
             'labels'              => $labels,
-            'supports'            => array( 'title', 'editor', ),
+            'supports'            => array( 'title', 'editor', 'custom-fields' ),
             'hierarchical'        => false,
             'public'              => true,
             'show_ui'             => true,
@@ -424,6 +428,10 @@ class GWP_Custom_Product_Tabs{
             'capability_type'     => 'post',
         );
         register_post_type( 'c_p_tab', $args );
+    }
+
+    function post_exists($post_id){
+    	return is_string(get_post_status( $post_id ) );
     }
 }//end GWP_Custom_Product_Tabs class.
 new GWP_Custom_Product_Tabs();
