@@ -3,7 +3,7 @@
 Plugin Name: GWP Custom Product Tabs
 Plugin URI:
 Description: A plugin to add Custom product tabs for WooCommerce
-Version: 1.1
+Version: 1.2
 Author: Ohad Raz
 Author URI: http://generatewp.com
 */
@@ -37,7 +37,7 @@ class GWP_Custom_Product_Tabs{
             //save settings tab
             add_action( 'woocommerce_update_options_'.$this->id, array($this,'update_settings_tab' ));
  
-                //add tabs select field
+            //add tabs select field
             add_action('woocommerce_admin_field_'.$this->post_type,array($this,'show_'.$this->post_type.'_field' ),10);
             //save tabs select field
             add_action( 'woocommerce_update_option_'.$this->post_type,array($this,'save_'.$this->post_type.'_field' ),10);
@@ -131,15 +131,13 @@ class GWP_Custom_Product_Tabs{
             </th>
             <td class="forminp forminp-<?php echo sanitize_title( $field['type'] ) ?>">
                 <p class="form-field custom_product_tabs">
-                    <select id="custom_product_tabs" style="min-width: 350px;" name="<?php echo $field['id'];?>[]" class="ajax_chosen_select_tabs" multiple="multiple" data-placeholder="<?php _e( 'Search for a custom tab&hellip;', 'GWP' ); ?>">
+                    <select id="custom_product_tabs" style="width: 50%;" name="<?php echo $field['id'];?>[]" class="ajax_chosen_select_tabs" multiple="multiple" data-placeholder="<?php _e( 'Search for a custom tab&hellip;', 'GWP' ); ?>">
                         <?php   
                             $tabs_ids = get_option($field['id']);
                             $_ids = ! empty( $tabs_ids ) ? array_map( 'absint',  $tabs_ids ) : null;
-                            if ( $_ids ) {
-                                foreach ( $_ids as $id ) {
-                                    $tab_name = get_the_title($id);
-                                    echo '<option value="' . esc_attr( $id ) . '" selected="selected">' . esc_html( $tab_name ) . '</option>';
-                                }
+                            foreach ( $this->get_custom_tabs_list() as $id => $label ) {
+                                $selected = in_array($id, $_ids)?  'selected="selected"' : '';
+                                echo '<option value="' . esc_attr( $id ) . '"'.$selected.'>' . esc_html( $label ) . '</option>';
                             }
                         ?>
                     </select>
@@ -174,22 +172,7 @@ class GWP_Custom_Product_Tabs{
         <script type="text/javascript">
         jQuery(document).ready(function($){
             // Ajax Chosen Product Selectors
-            jQuery("select.ajax_chosen_select_tabs").ajaxChosen({
-                method: 'GET',
-                url: ajaxurl,
-                dataType: 'json',
-                afterTypeDelay: 100,
-                data: {
-                    action  : 'woocommerce_json_custom_tabs',
-                    security: '<?php echo wp_create_nonce( "search-products-tabs" ); ?>'
-                }
-            }, function (data) {
-                var terms = {};
-                $.each(data, function (i, val) {
-                    terms[i] = val;
-                });
-                return terms;
-            });
+            jQuery("select.ajax_chosen_select_tabs").select2({});
         });
         </script>
         <?php
@@ -234,18 +217,16 @@ class GWP_Custom_Product_Tabs{
             <?php
             foreach ($fields as $f) {
                 $tabs_ids = get_post_meta( $post->ID, $f['key'], true );
-                $_ids = ! empty( $tabs_ids ) ? array_map( 'absint',  $tabs_ids ) : null;
+                $_ids = ! empty( $tabs_ids ) ? array_map( 'absint',  $tabs_ids ) : array();
                 ?>
                 <div class="options_group">
                     <p class="form-field custom_product_tabs">
                         <label for="custom_product_tabs"><?php echo $f['label']; ?></label>
-                        <select id="<?php echo $f['key']; ?>" name="<?php echo $f['key']; ?>[]" class="ajax_chosen_select_tabs" multiple="multiple" data-placeholder="<?php _e( 'Search for a custom tab&hellip;', 'GWP' ); ?>">
+                        <select style="width: 50%;" id="<?php echo $f['key']; ?>" name="<?php echo $f['key']; ?>[]" class="ajax_chosen_select_tabs" multiple="multiple" data-placeholder="<?php _e( 'Search for a custom tab&hellip;', 'GWP' ); ?>">
                             <?php                           
-                                if ( $_ids ) {
-                                    foreach ( $_ids as $id ) {
-                                        $tab_name = get_the_title($id);
-                                        echo '<option value="' . esc_attr( $id ) . '" selected="selected">' . esc_html( $tab_name ) . '</option>';
-                                    }
+                                foreach ( $this->get_custom_tabs_list() as $id => $label ) {
+                                    $selected = in_array($id, $_ids)?  'selected="selected"' : '';
+                                    echo '<option value="' . esc_attr( $id ) . '"'.$selected.'>' . esc_html( $label ) . '</option>';
                                 }
                             ?>
                         </select> <img class="help_tip" data-tip="<?php echo esc_attr($f['desc']); ?>" src="<?php echo $woocommerce->plugin_url(); ?>/assets/images/help.png" height="16" width="16" />
@@ -432,6 +413,27 @@ class GWP_Custom_Product_Tabs{
 
     function post_exists($post_id){
     	return is_string(get_post_status( $post_id ) );
+    }
+
+    /**
+     * get_custom_tabs_list
+     * @since 1.2
+     * @return array
+     */
+    function get_custom_tabs_list(){
+        $args = array(
+            'post_type'      => array($this->post_type),
+            'post_status'    => 'publish',
+            'posts_per_page' => -1,
+            'fields'         => 'ids'
+        );
+        $found_tabs = array();
+        $posts = get_posts($args);
+        if ( $posts ) foreach ( $posts as $post_id ) {
+ 
+            $found_tabs[ $post_id ] = get_the_title($post_id);
+        }
+        return $found_tabs;
     }
 }//end GWP_Custom_Product_Tabs class.
 new GWP_Custom_Product_Tabs();
