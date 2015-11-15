@@ -134,7 +134,7 @@ class GWP_Custom_Product_Tabs{
                     <select id="custom_product_tabs" style="width: 50%;" name="<?php echo $field['id'];?>[]" class="ajax_chosen_select_tabs" multiple="multiple" data-placeholder="<?php _e( 'Search for a custom tab&hellip;', 'GWP' ); ?>">
                         <?php   
                             $tabs_ids = get_option($field['id']);
-                            $_ids = ! empty( $tabs_ids ) ? array_map( 'absint',  $tabs_ids ) : null;
+                            $_ids = ! empty( $tabs_ids ) ? array_map( 'absint',  $tabs_ids ) : array();
                             foreach ( $this->get_custom_tabs_list() as $id => $label ) {
                                 $selected = in_array($id, $_ids)?  'selected="selected"' : '';
                                 echo '<option value="' . esc_attr( $id ) . '"'.$selected.'>' . esc_html( $label ) . '</option>';
